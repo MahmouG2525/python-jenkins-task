@@ -2,9 +2,7 @@ pipeline {
     agent any
 
     triggers {
-        
         githubPush()
-        
         cron('H 10 * * *')
     }
 
@@ -18,19 +16,17 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
+                echo 'Listing files in workspace...'
+                bat 'dir'
                 echo 'Building Docker image...'
-                script {
-                    dockerImage = docker.build("python-jenkins-task")
-                }
+                bat 'docker build -t python-jenkins-task .'
             }
         }
 
         stage('Run Docker Container') {
             steps {
                 echo 'Running Docker container...'
-                script {
-                    dockerImage.run('-p 5000:5000')
-                }
+                bat 'docker run -d -p 5000:5000 --name python-jenkins-task-container python-jenkins-task'
             }
         }
 
@@ -45,6 +41,8 @@ pipeline {
     post {
         always {
             echo 'Cleaning workspace...'
+            bat 'docker stop python-jenkins-task-container || exit 0'
+            bat 'docker rm python-jenkins-task-container || exit 0'
             cleanWs()
         }
     }
